@@ -2,33 +2,30 @@
 
 module ELA(clk, rst, in_data, data_rd, req, wen, addr, data_wr, done);
 
-input				clk;
-input				rst;
-input		  [7:0]	in_data;
-input		  [7:0]	data_rd;
+input		clk;
+input		rst;
+input		[7:0]	in_data;
+input		[7:0]	data_rd;
 
-output			reg  req;
-output			reg  wen;
-output		 reg  [9:0]	addr; //0~991
-output		 reg  [7:0]	data_wr;
-output			reg  done;
-
-//--------------------------------------
-//		Write your code here
-//--------------------------------------
+output		reg	req;
+output		reg	wen;
+output		reg	[9:0]	addr; //0~991
+output		reg	[7:0]	data_wr;
+output		reg	done;
 
 
-reg [5:0]   row_cnt; //row's element count (0~31)
-reg [9:0]   pointer; //(0~991)
+//----------------------------------------------------------------
+reg	[5:0]	row_cnt; //row's element count (0~31)
+reg	[9:0]	pointer; //(0~991)
 
 
-reg [7:0]   tmp_row[0:31];
-reg [7:0]   pre_row[0:31];
-reg [7:0]   pos_row[0:31];
+reg	[7:0]	tmp_row[0:31];
+reg	[7:0]	pre_row[0:31];
+reg	[7:0]	pos_row[0:31];
 
 
-reg	[3:0]   curt_state;
-reg	[3:0]   next_state;
+reg	[3:0]	curt_state;
+reg	[3:0]	next_state;
 parameter   DIN_1=4'd0,  STO_1=4'd1,  SET_pre=4'd2,  DIN_tmp=4'd3,  SET_pos=4'd4,  ELA_cal=4'd5,  STO_ELA=4'd6,  STO_tmp=4'd7; 
 
 reg [7:0]   D1[0:31];
@@ -36,44 +33,42 @@ reg [7:0]   D2[0:31];
 reg [7:0]   D3[0:31];
 
 
-////////////////////////////////////////////////////////////////
+//----------------------------------------------------------------
 always@(posedge clk or posedge rst) begin
-  if(rst) begin //------------ rst ------------
-
+  if(rst) begin //reset
     pointer <= 0;
     row_cnt <= -1; 
     done <= 0;
-
-		curt_state <= DIN_1;
+    curt_state <= DIN_1;
   end
   
   else begin
     curt_state <= next_state;
     row_cnt <= (row_cnt==31)? 0 : row_cnt + 1;
     case(curt_state)
-      DIN_1: begin //------------------------ DIN_1=0 ------------------------
+      DIN_1: begin //0: DIN_1
         tmp_row[row_cnt] <= in_data;       
       end
       
-      STO_1: begin //------------------------ STO_1=1 ------------------------
+      STO_1: begin //1: STO_1
         addr <= pointer;
         pointer <= pointer +1;
         data_wr <= tmp_row[row_cnt];
 			end
     
-      SET_pre: begin //------------------------ SET_pre=2 ------------------------
+      SET_pre: begin //2: SET_pre
         pre_row[row_cnt] <= tmp_row[row_cnt];
 			end
       
-      DIN_tmp: begin //------------------------ DIN_tmp=3 ------------------------
+      DIN_tmp: begin //3: DIN_tmp
         tmp_row[row_cnt] <= in_data;
       end
       
-      SET_pos: begin //------------------------ SET_pos=4 ------------------------
+      SET_pos: begin //4: SET_pos
         pos_row[row_cnt] <= tmp_row[row_cnt];
       end
       
-      ELA_cal: begin //------------------------ ELA_cal=5 ------------------------
+      ELA_cal: begin //5: ELA_cal
         if(row_cnt == 0 || row_cnt == 31) begin
           D1[row_cnt] <= 255;
           D2[row_cnt] <= (pre_row[row_cnt]>pos_row[row_cnt]) ? (pre_row[row_cnt]-pos_row[row_cnt]) : (pos_row[row_cnt]-pre_row[row_cnt]);
@@ -86,7 +81,7 @@ always@(posedge clk or posedge rst) begin
         end
       end
       
-      STO_ELA: begin //------------------------ STO_ELA=6 ------------------------
+      STO_ELA: begin //6: STO_ELA
         if(D2[row_cnt] <= D1[row_cnt] && D2[row_cnt] <= D3[row_cnt]) begin
           data_wr <= (pre_row[row_cnt] + pos_row[row_cnt])/2;
         end
@@ -100,7 +95,7 @@ always@(posedge clk or posedge rst) begin
         pointer <= pointer +1;
       end
       
-      STO_tmp: begin //------------------------ STO_tmp=7 ------------------------
+      STO_tmp: begin //7: STO_tmp
         if(addr >= 991) begin
           done <= 1; //finish
         end
@@ -114,7 +109,8 @@ always@(posedge clk or posedge rst) begin
   end
 end
 
-////////////////////////////////////////////////////////////////
+
+//----------------------------------------------------------------
 always@(*) begin
   if(rst) begin
     wen = 0;
@@ -165,7 +161,7 @@ always@(*) begin
       end
 
     endcase
-	end
+  end
 end
 
 endmodule
