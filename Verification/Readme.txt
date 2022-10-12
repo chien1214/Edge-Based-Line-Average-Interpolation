@@ -1,0 +1,1 @@
+Running generator.py with image.jpg in same directory to generate the gray-scale testing data!
