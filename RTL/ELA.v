@@ -97,7 +97,7 @@ always@(posedge clk or posedge rst) begin
       
       STO_tmp: begin  // Stage 7: STO_tmp
         if(addr >= 991) begin
-          done <= 1; //finish
+          done <= 1;  // finish
         end
         else begin
           addr <= pointer;
