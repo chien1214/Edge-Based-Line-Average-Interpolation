@@ -14,9 +14,9 @@ output		reg	[7:0]	data_wr;
 output		reg	done;
 
 
-//----------------------------------------------------------------
-reg	[5:0]	row_cnt; //row's element count (0~31)
-reg	[9:0]	pointer; //(0~991)
+// ----------------------------------------------------------------
+reg	[5:0]	row_cnt;  // row's element count (0~31)
+reg	[9:0]	pointer;  // (0~991)
 
 
 reg	[7:0]	tmp_row[0:31];
@@ -33,9 +33,9 @@ reg [7:0]   D2[0:31];
 reg [7:0]   D3[0:31];
 
 
-//----------------------------------------------------------------
+// ----------------------------------------------------------------
 always@(posedge clk or posedge rst) begin
-  if(rst) begin //reset
+    if(rst) begin  // reset
     pointer <= 0;
     row_cnt <= -1; 
     done <= 0;
@@ -46,29 +46,29 @@ always@(posedge clk or posedge rst) begin
     curt_state <= next_state;
     row_cnt <= (row_cnt==31)? 0 : row_cnt + 1;
     case(curt_state)
-      DIN_1: begin //0: DIN_1
+      DIN_1: begin  // Stage 0: DIN_1
         tmp_row[row_cnt] <= in_data;       
       end
       
-      STO_1: begin //1: STO_1
+      STO_1: begin  // Stage 1: STO_1
         addr <= pointer;
         pointer <= pointer +1;
         data_wr <= tmp_row[row_cnt];
 			end
     
-      SET_pre: begin //2: SET_pre
+      SET_pre: begin  // Stage 2: SET_pre
         pre_row[row_cnt] <= tmp_row[row_cnt];
 			end
       
-      DIN_tmp: begin //3: DIN_tmp
+      DIN_tmp: begin  // Stage 3: DIN_tmp
         tmp_row[row_cnt] <= in_data;
       end
       
-      SET_pos: begin //4: SET_pos
+      SET_pos: begin  // Stage 4: SET_pos
         pos_row[row_cnt] <= tmp_row[row_cnt];
       end
       
-      ELA_cal: begin //5: ELA_cal
+      ELA_cal: begin  // Stage 5: ELA_cal
         if(row_cnt == 0 || row_cnt == 31) begin
           D1[row_cnt] <= 255;
           D2[row_cnt] <= (pre_row[row_cnt]>pos_row[row_cnt]) ? (pre_row[row_cnt]-pos_row[row_cnt]) : (pos_row[row_cnt]-pre_row[row_cnt]);
@@ -81,7 +81,7 @@ always@(posedge clk or posedge rst) begin
         end
       end
       
-      STO_ELA: begin //6: STO_ELA
+      STO_ELA: begin  // Stage 6: STO_ELA
         if(D2[row_cnt] <= D1[row_cnt] && D2[row_cnt] <= D3[row_cnt]) begin
           data_wr <= (pre_row[row_cnt] + pos_row[row_cnt])/2;
         end
@@ -95,7 +95,7 @@ always@(posedge clk or posedge rst) begin
         pointer <= pointer +1;
       end
       
-      STO_tmp: begin //7: STO_tmp
+      STO_tmp: begin  // Stage 7: STO_tmp
         if(addr >= 991) begin
           done <= 1; //finish
         end
@@ -110,7 +110,7 @@ always@(posedge clk or posedge rst) begin
 end
 
 
-//----------------------------------------------------------------
+// ----------------------------------------------------------------
 always@(*) begin
   if(rst) begin
     wen = 0;
@@ -120,8 +120,8 @@ always@(*) begin
   else begin
     case(curt_state)
       DIN_1: begin
-        req = 1; //req data
-        wen = 0; //wen ctrl
+        req = 1;  // req data
+        wen = 0;  // wen ctrl
         next_state = (row_cnt==31) ? STO_1 : DIN_1;
       end
       STO_1: begin
@@ -129,7 +129,7 @@ always@(*) begin
         wen = 1;
         next_state = (row_cnt==31) ? SET_pre : STO_1;
       end
-      SET_pre: begin //<---
+      SET_pre: begin  // <---
         req = 0;
         wen = 0;
         next_state = (row_cnt==31) ? DIN_tmp : SET_pre;
